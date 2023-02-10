@@ -255,6 +255,10 @@ export default class DevPortalClient {
 			await this.uploadContent();
 			await this.uploadBlobs();
 			console.log("Import DONE");
+
+			console.log("Publishing...");
+			await this.publish();
+			console.log("Publish DONE");
 		}
 		catch (error: any) {
 			throw new Error(`Unable to complete import. ${error.message}`);
@@ -273,39 +277,5 @@ export default class DevPortalClient {
 		};
 
 		await this.client.portalRevision.beginUpdateAndWait(this.resourceGroupName, this.serviceName, revision, "*", body);
-	}
-
-	/**
-	 * Replaces existing URLs of API Management service with specified URLs.
-	 */
-	async updateContentUrl(existingUrls: any, replaceableUrls: any) {
-		if (existingUrls.Count != replaceableUrls.Count) {
-			throw new Error(`Existing URL and Replaceable URLs count mismatch.`);
-		}
-
-		const contentTypeId = "url";
-		const contentItems = await this.getContentItems(contentTypeId);
-
-		console.log("Number of urls found in portal: " + contentItems.length);
-
-		for (const contentItem of contentItems) {
-			var count = -1;
-			console.log(" url found in portal: " + contentItem.properties?.permalink);
-
-			for (const existingUrl of existingUrls) {
-				count++;
-				if (!contentItem.properties)
-					continue;
-				if (contentItem.properties.permalink == existingUrl) {
-					contentItem.properties.permalink = replaceableUrls[count];
-					console.log("updating URL content... for no. " + count + " link: " + contentItem.properties.permalink);
-					console.log(" updated URL content : for no. " + count + " content item: " + JSON.stringify(contentItem));
-
-					const response = await this.client.contentItem.createOrUpdate(this.resourceGroupName, this.serviceName, contentTypeId, contentItem.name!, contentItem);
-
-					console.log(" response : " + JSON.stringify(response));
-				}
-			};
-		};
 	}
 }
