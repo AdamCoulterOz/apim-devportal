@@ -6,20 +6,23 @@ import { DefaultAzureCredential } from "@azure/identity";
 import { ContainerClient } from "@azure/storage-blob";
 import { RestClient } from "typed-rest-client/RestClient";
 import { BearerCredentialHandler } from 'typed-rest-client/Handlers';
-import { AzureResourceId, Flatten, PathFiles } from "./helpers";
+import { AzureResourceId, CurrentTimeStamp, Flatten, PathFiles } from "./helpers";
 
 export default class DevPortalClient {
-	readonly folder: string = "./dump";
+	readonly folder: string;
 	readonly baseUrl: string;
 	readonly client: ApiManagementClient;
 	readonly resourceGroupName: string;
 	readonly serviceName: string;
 	readonly endpoint: string;
-	readonly mediaFolder = path.join(this.folder, "media");
-	readonly dataFolder = path.join(this.folder, "data");
+	readonly mediaFolder: string;
+	readonly dataFolder: string;
 
-	public constructor(serviceId: string, endpoint?: string) {
+	public constructor(serviceId: string, folder: string = ".", endpoint?: string) {
 		const resourceId = AzureResourceId.FromString(serviceId, "Microsoft.ApiManagement/service");
+		this.folder = folder;
+		this.mediaFolder = path.join(this.folder, "media");
+		this.dataFolder = path.join(this.folder, "data");
 		this.resourceGroupName = resourceId.group;
 		this.serviceName = resourceId.name;
 		this.endpoint = endpoint ?? "management.azure.com";
@@ -248,7 +251,7 @@ export default class DevPortalClient {
 	/**
 	 * Imports the content and media files into specfied service.
 	 */
-	async Import() {
+	async Import(name?: string) {
 		console.log("Importing...");
 
 		try {
@@ -257,7 +260,7 @@ export default class DevPortalClient {
 			console.log("Import DONE");
 
 			console.log("Publishing...");
-			await this.publish();
+			await this.publish(name);
 			console.log("Publish DONE");
 		}
 		catch (error: any) {
@@ -268,14 +271,14 @@ export default class DevPortalClient {
 	/**
 	 * Publishes the content of the specified APIM service.
 	 */
-	async publish() {
-		const timeStamp = new Date();
-		const revision = timeStamp.toISOString().replace(/[\-\:\T]/g, "").substring(0, 14);
+	async publish(name?: string) {
+		const publishName = name ?? CurrentTimeStamp();
+
 		const body: PortalRevisionContract = {
-			description: `Migration ${revision}.`,
+			description: publishName,
 			isCurrent: true
 		};
 
-		await this.client.portalRevision.beginUpdateAndWait(this.resourceGroupName, this.serviceName, revision, "*", body);
+		await this.client.portalRevision.beginUpdateAndWait(this.resourceGroupName, this.serviceName, publishName, "*", body);
 	}
 }

@@ -50,3 +50,9 @@ export function PathFiles(dir: fs.PathLike): string[] {
 
 	return results;
 }
+
+export function CurrentTimeStamp(): string {
+	const timeStamp = new Date();
+	const revision = timeStamp.toISOString().replace(/[\-\:\T]/g, "").substring(0, 14);
+	return revision;
+}
