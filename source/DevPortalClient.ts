@@ -251,17 +251,13 @@ export default class DevPortalClient {
 	/**
 	 * Imports the content and media files into specfied service.
 	 */
-	async Import(name?: string) {
+	async Import() {
 		console.log("Importing...");
 
 		try {
 			await this.uploadContent();
 			await this.uploadBlobs();
 			console.log("Import DONE");
-
-			console.log("Publishing...");
-			await this.publish(name);
-			console.log("Publish DONE");
 		}
 		catch (error: any) {
 			throw new Error(`Unable to complete import. ${error.message}`);
@@ -271,14 +267,24 @@ export default class DevPortalClient {
 	/**
 	 * Publishes the content of the specified APIM service.
 	 */
-	async publish(name?: string) {
-		const publishName = name ?? CurrentTimeStamp();
+	async Publish(name?: string) {
+		console.log("Publishing...");
 
-		const body: PortalRevisionContract = {
-			description: publishName,
-			isCurrent: true
-		};
+		try {
 
-		await this.client.portalRevision.beginUpdateAndWait(this.resourceGroupName, this.serviceName, publishName, "*", body);
+			const publishName = name ?? CurrentTimeStamp();
+			console.log(`Publishing as ${publishName}`);
+
+			const revision: PortalRevisionContract = {
+				description: publishName,
+				isCurrent: true
+			};
+			await this.client.portalRevision.beginCreateOrUpdateAndWait(this.resourceGroupName, this.serviceName, publishName, revision);
+
+			console.log("Publish DONE");
+		}
+		catch (error: any) {
+			throw new Error(`Unable to complete publish. ${error.message}`);
+		}
 	}
 }
